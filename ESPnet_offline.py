@@ -19,7 +19,20 @@ model, utils = torch.hub.load(repo_or_dir='snakers4/silero-vad',
                                 force_reload=True)
 # download example
 # torch.hub.download_url_to_file('https://models.silero.ai/vad_models/en.wav', 'en_example.wav')
-def generate_transcription(s2t_config_file, s2t_model_file, audio_path, speech_enh_train_conf, speech_enh_model_file, frame_length=7, music_tolerance=0.8, transcript_file=None, output_arpa_file="6gram1.arpa"):
+def generate_transcription(s2t_config_file, 
+                           s2t_model_file, 
+                           audio_path, 
+                           speech_enh_train_conf, 
+                           speech_enh_model_file,
+                           lm_file=None,
+                           lm_train_config=None, 
+                           frame_length=7, 
+                           music_tolerance=0.8, 
+                           speech_limit=0.1, 
+                           transcript_file=None, 
+                           output_arpa_file="6gram1.arpa",
+
+                           ):
     if transcript_file is not None:
         os.system(f'/home/suryansh/kenlm/build/bin/lmplz -o 6 --discount_fallback <{transcript_file}> {output_arpa_file}')
         os.chdir('/home/suryansh/MADHAV/asr_train_asr_raw_hindi_bpe500')
@@ -27,6 +40,8 @@ def generate_transcription(s2t_config_file, s2t_model_file, audio_path, speech_e
         speech2text = Speech2Text(
             asr_train_config=s2t_config_file,
             asr_model_file=s2t_model_file,
+            lm_train_config=lm_train_config,
+            lm_file=lm_file,
             ngram_file=output_arpa_file,
             ngram_weight = 0.8,
             device="cuda",
@@ -42,6 +57,8 @@ def generate_transcription(s2t_config_file, s2t_model_file, audio_path, speech_e
         speech2text = Speech2Text(
             asr_train_config=s2t_config_file,
             asr_model_file=s2t_model_file,
+            lm_train_config=lm_train_config,
+            lm_file=lm_file,
             device="cuda",
             minlenratio=0.0,
             maxlenratio=0.5,
@@ -103,7 +120,7 @@ def generate_transcription(s2t_config_file, s2t_model_file, audio_path, speech_e
 #             at = AudioTagging(checkpoint_path=None, device='cuda')
             (clipwise_output, embedding) = at.inference(wave)
             print(clipwise_output[0][137])
-            if clipwise_output[0][137]>=music_tolerance:
+            if clipwise_output[0][137]>=music_tolerance and clipwise_output[0][0]>=speech_limit:
                 print('Enhancement Required')
                 wave = enh_model_sc(mixwav_sc[None, ...], 16000)
             a=wave[0].squeeze()
