@@ -10,6 +10,7 @@ from espnet_model_zoo.downloader import ModelDownloader
 from espnet2.bin.asr_inference import Speech2Text
 from SplitAudio import split_audio_using_VAD
 from WithTranscript import with_transcript
+from CreateDict import create_dict
 def text_normalizer(text):
         text = text.upper()
         return text.translate(str.maketrans('', '', string.punctuation))
@@ -95,6 +96,7 @@ def generate_transcription(s2t_config_file,
     os.chdir('/home/suryansh/MADHAV/asr_train_asr_raw_hindi_bpe500')
     preds = ""
     at = AudioTagging(checkpoint_path=None, device='cuda')
+    timestamps_and_transcripts = []
     for i, chunk in enumerate(chunks_array):
         start_time = time.time()
         speech = np.array([])
@@ -127,7 +129,7 @@ def generate_transcription(s2t_config_file,
             text, *_ = nbests[0]
     #         output_filename = f'results/output_chunk{i}.wav'
     #         sf.write(output_filename, speech, samplerate=16000)
-#             timestamps_and_transcripts.append((split_sec['start'][i], split_sec['end'][i], text_normalizer(text)))
+            timestamps_and_transcripts.append(create_dict(split_sec['start'][i], split_sec['end'][i], text_normalizer(text)))
             if(preds==""):
                 preds=(text_normalizer(text))
             else:
@@ -136,7 +138,7 @@ def generate_transcription(s2t_config_file,
         print(i, "/", len(chunks_array))
         elapsed_time = time.time() - start_time
         print(f"Time taken: {elapsed_time:.2f} seconds")
-    return preds
+    return preds, timestamps_and_transcripts
 
 def modified_transcription(s2t_config_file, 
                            s2t_model_file, 
@@ -152,7 +154,7 @@ def modified_transcription(s2t_config_file,
                            transcript_file=None, 
                            output_arpa_file="6gram1.arpa",
                            ):
-    text2=generate_transcription(s2t_config_file,
+    text2, _=generate_transcription(s2t_config_file,
                             s2t_model_file,
                             audio_path,
                             speech_enh_train_conf,
@@ -167,4 +169,33 @@ def modified_transcription(s2t_config_file,
                             )
     return with_transcript(transcript, text2, 6)
 
-
+def runInference(language,
+                 audio_path,
+                frame_length=7, 
+                music_tolerance=0.8, 
+                speech_limit=0.1, 
+                transcript_file=None, 
+                output_arpa_file="6gram1.arpa",
+                ):
+    if language=="Hindi":
+        s2t_config_file = '/home/suryansh/MADHAV/asr_train_asr_raw_hindi_bpe500/exp/asr_train_asr_raw_hindi_bpe500/config.yaml'
+        s2t_model_file = '/home/suryansh/MADHAV/asr_train_asr_raw_hindi_bpe500/exp/asr_train_asr_raw_hindi_bpe500/valid.acc.ave_10best.pth'
+        speech_enh_train_conf = '/home/suryansh/MADHAV/enh_train_enh_conv_tasnet_raw_hindi_bpe500/config.yaml'
+        speech_enh_model_file = '/home/suryansh/MADHAV/enh_train_enh_conv_tasnet_raw_hindi_bpe500/valid.loss.best.pth'
+        lm_file=None
+        lm_train_config=None
+    
+    text, timestamps_and_transcripts=generate_transcription(s2t_config_file,
+                            s2t_model_file,
+                            audio_path,
+                            speech_enh_train_conf,
+                            speech_enh_model_file,
+                            lm_file,
+                            lm_train_config,
+                            frame_length,
+                            music_tolerance,
+                            speech_limit,
+                            transcript_file,
+                            output_arpa_file
+                            )
+    return timestamps_and_transcripts
