@@ -9,7 +9,7 @@ import string
 from espnet_model_zoo.downloader import ModelDownloader
 from espnet2.bin.asr_inference import Speech2Text
 from SplitAudio import split_audio_using_VAD
-
+from WithTranscript import with_transcript
 def text_normalizer(text):
         text = text.upper()
         return text.translate(str.maketrans('', '', string.punctuation))
@@ -31,7 +31,6 @@ def generate_transcription(s2t_config_file,
                            speech_limit=0.1, 
                            transcript_file=None, 
                            output_arpa_file="6gram1.arpa",
-
                            ):
     if transcript_file is not None:
         os.system(f'/home/suryansh/kenlm/build/bin/lmplz -o 6 --discount_fallback <{transcript_file}> {output_arpa_file}')
@@ -138,4 +137,34 @@ def generate_transcription(s2t_config_file,
         elapsed_time = time.time() - start_time
         print(f"Time taken: {elapsed_time:.2f} seconds")
     return preds
+
+def modified_transcription(s2t_config_file, 
+                           s2t_model_file, 
+                           audio_path, 
+                           speech_enh_train_conf, 
+                           speech_enh_model_file,
+                           transcript,
+                           lm_file=None,
+                           lm_train_config=None, 
+                           frame_length=7, 
+                           music_tolerance=0.8, 
+                           speech_limit=0.1, 
+                           transcript_file=None, 
+                           output_arpa_file="6gram1.arpa",
+                           ):
+    text2=generate_transcription(s2t_config_file,
+                            s2t_model_file,
+                            audio_path,
+                            speech_enh_train_conf,
+                            speech_enh_model_file,
+                            lm_file,
+                            lm_train_config,
+                            frame_length,
+                            music_tolerance,
+                            speech_limit,
+                            transcript_file,
+                            output_arpa_file
+                            )
+    return with_transcript(transcript, text2, 6)
+
 

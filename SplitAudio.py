@@ -1,9 +1,5 @@
 import librosa
 import pandas as pd
-import numpy as np
-import os
-
-
 def split_audio_using_VAD(input_file, pred, chunk_length_sec=15):
     # Load the audio file
     audio, sr = librosa.load(input_file, sr=None)
