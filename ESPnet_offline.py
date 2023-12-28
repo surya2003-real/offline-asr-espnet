@@ -8,9 +8,9 @@ import torch
 import string
 from espnet_model_zoo.downloader import ModelDownloader
 from espnet2.bin.asr_inference import Speech2Text
-from SplitAudio import split_audio_using_VAD
-from WithTranscript import with_transcript
-from CreateDict import create_dict
+from src.core.offline_asr_espnet.SplitAudio import split_audio_using_VAD
+from src.core.offline_asr_espnet.WithTranscript import with_transcript, solo_label_2
+from src.core.offline_asr_espnet.CreateDict import create_dict
 def text_normalizer(text):
         text = text.upper()
         return text.translate(str.maketrans('', '', string.punctuation))
@@ -25,6 +25,7 @@ def generate_transcription(s2t_config_file,
                            audio_path, 
                            speech_enh_train_conf, 
                            speech_enh_model_file,
+                           transcript=None,
                            lm_file=None,
                            lm_train_config=None, 
                            frame_length=7, 
@@ -138,6 +139,12 @@ def generate_transcription(s2t_config_file,
         print(i, "/", len(chunks_array))
         elapsed_time = time.time() - start_time
         print(f"Time taken: {elapsed_time:.2f} seconds")
+        if transcript is not None:
+            target_key = '1_transcript'
+            new_values=with_transcript(transcript, solo_label_2(timestamps_and_transcripts), 5)
+            for i, d in enumerate(timestamps_and_transcripts):
+                d[target_key] = new_values[i]
+            preds=" ".join(new_values)
     return preds, timestamps_and_transcripts
 
 def modified_transcription(s2t_config_file, 
@@ -177,84 +184,84 @@ def runInference(language,
                 transcript_file=None, 
                 output_arpa_file="6gram1.arpa",
                 ):
-    if language=="Hindi":
+    if language=="hindi":
         s2t_config_file = '../models/asr_train_asr_raw_hindi_bpe500/exp/asr_train_asr_raw_hindi_bpe500/config.yaml'
         s2t_model_file = '../models/asr_train_asr_raw_hindi_bpe500/exp/asr_train_asr_raw_hindi_bpe500/valid.acc.ave_10best.pth'
         speech_enh_train_conf = '../models/enh_train_enh_conv_tasnet_raw_hindi_bpe500/config.yaml'
         speech_enh_model_file = '../models/enh_train_enh_conv_tasnet_raw_hindi_bpe500/valid.loss.best.pth'
         lm_file=None
         lm_train_config=None
-    elif language=="Telugu":
+    elif language=="telugu":
         s2t_config_file = '../models/asr_train_asr_raw_telugu_bpe500/exp/asr_train_asr_raw_telugu_bpe500/config.yaml'
         s2t_model_file = '../models/asr_train_asr_raw_telugu_bpe500/exp/asr_train_asr_raw_telugu_bpe500/valid.acc.ave_10best.pth'
         speech_enh_train_conf = '../models/enh_train_enh_conv_tasnet_raw_telugu_bpe500/config.yaml'
         speech_enh_model_file = '../models/enh_train_enh_conv_tasnet_raw_telugu_bpe500/valid.loss.best.pth'
         lm_file=None
         lm_train_config=None
-    elif language=="Urdu":
+    elif language=="urdu":
         s2t_config_file = '../models/asr_train_asr_raw_urdu_bpe500/exp/asr_train_asr_raw_urdu_bpe500/config.yaml'
         s2t_model_file = '../models/asr_train_asr_raw_urdu_bpe500/exp/asr_train_asr_raw_urdu_bpe500/valid.acc.ave_10best.pth'
         speech_enh_train_conf = '../models/enh_train_enh_conv_tasnet_raw_urdu_bpe500/config.yaml'
         speech_enh_model_file = '../models/enh_train_enh_conv_tasnet_raw_urdu_bpe500/valid.loss.best.pth'
         lm_file=None
         lm_train_config=None
-    elif language=="Malayalam":
+    elif language=="malayalam":
         s2t_config_file = '../models/asr_train_asr_raw_malayalam_bpe500/exp/asr_train_asr_raw_malayalam_bpe500/config.yaml'
         s2t_model_file = '../models/asr_train_asr_raw_malayalam_bpe500/exp/asr_train_asr_raw_malayalam_bpe500/valid.acc.ave_10best.pth'
         speech_enh_train_conf = '../models/enh_train_enh_conv_tasnet_raw_malayalam_bpe500/config.yaml'
         speech_enh_model_file = '../models/enh_train_enh_conv_tasnet_raw_malayalam_bpe500/valid.loss.best.pth'
         lm_file=None
         lm_train_config=None
-    elif language=="Tamil":
+    elif language=="tamil":
         s2t_config_file = '../models/asr_train_asr_raw_tamil_bpe500/exp/asr_train_asr_raw_tamil_bpe500/config.yaml'
         s2t_model_file = '../models/asr_train_asr_raw_tamil_bpe500/exp/asr_train_asr_raw_tamil_bpe500/valid.acc.ave_10best.pth'
         speech_enh_train_conf = '../models/enh_train_enh_conv_tasnet_raw_tamil_bpe500/config.yaml'
         speech_enh_model_file = '../models/enh_train_enh_conv_tasnet_raw_tamil_bpe500/valid.loss.best.pth'
         lm_file=None
         lm_train_config=None
-    elif language=="Kannada":
+    elif language=="kannada":
         s2t_config_file = '../models/asr_train_asr_raw_kannada_bpe500/exp/asr_train_asr_raw_kannada_bpe500/config.yaml'
         s2t_model_file = '../models/asr_train_asr_raw_kannada_bpe500/exp/asr_train_asr_raw_kannada_bpe500/valid.acc.ave_10best.pth'
         speech_enh_train_conf = '../models/enh_train_enh_conv_tasnet_raw_kannada_bpe500/config.yaml'
         speech_enh_model_file = '../models/enh_train_enh_conv_tasnet_raw_kannada_bpe500/valid.loss.best.pth'
         lm_file=None
         lm_train_config=None
-    elif language=="Marathi":
+    elif language=="marathi":
         s2t_config_file = '../models/asr_train_asr_raw_marathi_bpe500/exp/asr_train_asr_raw_marathi_bpe500/config.yaml'
         s2t_model_file = '../models/asr_train_asr_raw_marathi_bpe500/exp/asr_train_asr_raw_marathi_bpe500/valid.acc.ave_10best.pth'
         speech_enh_train_conf = '../models/enh_train_enh_conv_tasnet_raw_marathi_bpe500/config.yaml'
         speech_enh_model_file = '../models/enh_train_enh_conv_tasnet_raw_marathi_bpe500/valid.loss.best.pth'
         lm_file=None
         lm_train_config=None
-    elif language=="Odia":
+    elif language=="odia":
         s2t_config_file = '../models/asr_train_asr_raw_odia_bpe500/exp/asr_train_asr_raw_odia_bpe500/config.yaml'
         s2t_model_file = '../models/asr_train_asr_raw_odia_bpe500/exp/asr_train_asr_raw_odia_bpe500/valid.acc.ave_10best.pth'
         speech_enh_train_conf = '../models/enh_train_enh_conv_tasnet_raw_odia_bpe500/config.yaml'
         speech_enh_model_file = '../models/enh_train_enh_conv_tasnet_raw_odia_bpe500/valid.loss.best.pth'
         lm_file=None
         lm_train_config=None
-    elif language=="Bengali":
+    elif language=="bengali":
         s2t_config_file = '../models/asr_train_asr_raw_bengali_bpe500/exp/asr_train_asr_raw_bengali_bpe500/config.yaml'
         s2t_model_file = '../models/asr_train_asr_raw_bengali_bpe500/exp/asr_train_asr_raw_bengali_bpe500/valid.acc.ave_10best.pth'
         speech_enh_train_conf = '../models/enh_train_enh_conv_tasnet_raw_bengali_bpe500/config.yaml'
         speech_enh_model_file = '../models/enh_train_enh_conv_tasnet_raw_bengali_bpe500/valid.loss.best.pth'
         lm_file=None
         lm_train_config=None
-    elif language=="Gujrati":
+    elif language=="gujrati":
         s2t_config_file = '../models/asr_train_asr_raw_gujrati_bpe500/exp/asr_train_asr_raw_gujrati_bpe500/config.yaml'
         s2t_model_file = '../models/asr_train_asr_raw_gujrati_bpe500/exp/asr_train_asr_raw_gujrati_bpe500/valid.acc.ave_10best.pth'
         speech_enh_train_conf = '../models/enh_train_enh_conv_tasnet_raw_gujrati_bpe500/config.yaml'
         speech_enh_model_file = '../models/enh_train_enh_conv_tasnet_raw_gujrati_bpe500/valid.loss.best.pth'
         lm_file=None
         lm_train_config=None
-    elif language=="Punjabi":
+    elif language=="punjabi":
         s2t_config_file = '../models/asr_train_asr_raw_punjabi_bpe500/exp/asr_train_asr_raw_punjabi_bpe500/config.yaml'
         s2t_model_file = '../models/asr_train_asr_raw_punjabi_bpe500/exp/asr_train_asr_raw_punjabi_bpe500/valid.acc.ave_10best.pth'
         speech_enh_train_conf = '../models/enh_train_enh_conv_tasnet_raw_punjabi_bpe500/config.yaml'
         speech_enh_model_file = '../models/enh_train_enh_conv_tasnet_raw_punjabi_bpe500/valid.loss.best.pth'
         lm_file=None
         lm_train_config=None
-    elif language=="Sanskrit":
+    elif language=="sanskrit":
         s2t_config_file = '../models/asr_train_asr_raw_sanskrit_bpe500/exp/asr_train_asr_raw_sanskrit_bpe500/config.yaml'
         s2t_model_file = '../models/asr_train_asr_raw_sanskrit_bpe500/exp/asr_train_asr_raw_sanskrit_bpe500/valid.acc.ave_10best.pth'
         speech_enh_train_conf = '../models/enh_train_enh_conv_tasnet_raw_sanskrit_bpe500/config.yaml'
